@@ -1,7 +1,8 @@
+require "tftp/lib"
 require "tftp/client/version"
+require "tftp/client/connect"
 
 module Tftp
   module Client
-    # Your code goes here...
   end
 end
