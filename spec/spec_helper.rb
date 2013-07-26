@@ -8,9 +8,12 @@ SimpleCov.formatter = SimpleCov::Formatter::MultiFormatter[
 SimpleCov.start do
   add_filter "spec/"
 end
+
+require 'fakefs/spec_helpers'
 require 'tftp/client'
 require 'pp'
 
 def testfile_path
-  File.expand_path("lorem.txt","fixtures")
+  File.expand_path("lorem.txt","spec/fixtures")
 end
+
