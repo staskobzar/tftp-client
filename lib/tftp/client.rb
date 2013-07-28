@@ -1,3 +1,4 @@
+require "ipaddr"
 require "tftp/lib"
 require "tftp/client/version"
 require "tftp/client/connect"

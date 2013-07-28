@@ -26,11 +26,8 @@ module TFTP
         end
 
         it "converts hostname to IP address" do
-          pending "IPSocket.getaddress"
-        end
-
-        it "setup address family ( AF_INET || AF_INET6 )" do
-          pending "IPAddr#ipv6?"
+          con = Connect.new "localhost", 69
+          con.host.should == "127.0.0.1"
         end
 
       end
@@ -52,6 +49,15 @@ module TFTP
 
       describe "read socket" do
         include FakeFS::SpecHelpers
+        it "set conncestion for IPv6 nets" do
+          sock = double(UDPSocket)
+          sock.stub(:send)
+          sock.should_receive(:recvfrom).with(512).and_return([[3,2,"B"*12].pack("n2Z*"), ["AF_INET",54521,"127.0.0.1","127.0.0.1"]])
+          expect(UDPSocket).to receive(:new).with(Socket::AF_INET6).and_return(sock)
+          con = Connect.new "::1", 69
+          con.get(file) 
+        end
+
         it "esteblish connection and read responses" do
           tid = 42863
           sock = double(UDPSocket)

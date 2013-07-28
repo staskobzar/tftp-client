@@ -13,13 +13,13 @@ module TFTP
 
       # Inititalize client. Sets TFTP host and port
       def initialize(host, port=69)
-        self.host = host
+        self.host = IPSocket.getaddress(host)
         self.port = port
       end
 
       def get(file, dest=nil)
         File.open(dest || file, ?w) do |file_dest|
-          read(file) do |response|
+          read(file) do
             file_dest.write response.data
           end
         end
@@ -27,24 +27,47 @@ module TFTP
 
       private
         def read(file)
-          sock = UDPSocket.new
-          tftp = TFTP::Lib::Request.new
-          sock.send tftp.read(file), 0, host, port
-          msg, addrinfo = sock.recvfrom(TFTP::Lib::Packet::SEGSIZE)
-          self.port = addrinfo[1]
-          response = TFTP::Lib::Response.new(msg)
-          raise response.errmsg if response.opcode.eql? TFTP::Lib::Packet::ERROR
-          sock.send tftp.acknowlege, 0, host, port
-          yield response
-          while response.data.bytesize.eql? TFTP::Lib::Packet::SEGSIZE
-            msg, addrinfo = sock.recvfrom(TFTP::Lib::Packet::SEGSIZE)
-            response = TFTP::Lib::Response.new(msg)
-            tftp.block = response.block
-            sock.send tftp.acknowlege, 0, host, port
-            raise response.errmsg if response.opcode.eql? TFTP::Lib::Packet::ERROR
-            yield response
-          end
+          send request.read(file)
+          begin
+            receive
+            acknowlege
+            yield
+          end while response.data.bytesize.eql? TFTP::Lib::Packet::SEGSIZE
+        end
 
+        def send(packet)
+          sock.send packet, 0, host, port
+        end
+
+        def receive
+          msg, addrinfo = sock.recvfrom(TFTP::Lib::Packet::SEGSIZE)
+          self.response = msg
+          self.port = addrinfo[1]
+          request.block = response.block
+        end
+
+        def acknowlege
+          send request.acknowlege
+        end
+
+        def sock
+          family = IPAddr.new(host).ipv6? ? Socket::AF_INET6 : Socket::AF_INET
+          @sock ||= UDPSocket.new family
+        end
+
+        def request
+          @request ||= TFTP::Lib::Request.new
+        end
+
+        def response=(msg)
+          @response = TFTP::Lib::Response.new(msg)
+          # from RFC1350: An error is signalled by sending an error packet.
+          # This packet is not **acknowledged**, and not retransmitted
+          raise @response.errmsg if @response.opcode.eql? TFTP::Lib::Packet::ERROR
+        end
+
+        def response
+          @response
         end
 
     end
