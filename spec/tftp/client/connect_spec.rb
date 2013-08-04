@@ -49,10 +49,10 @@ module TFTP
 
       describe "read socket" do
         include FakeFS::SpecHelpers
-        it "set conncestion for IPv6 nets" do
+        it "set connection for IPv6 nets" do
           sock = double(UDPSocket)
           sock.stub(:send)
-          sock.should_receive(:recvfrom).with(512).and_return([[3,2,"B"*12].pack("n2Z*"), ["AF_INET",54521,"127.0.0.1","127.0.0.1"]])
+          sock.should_receive(:recvfrom).and_return([[3,2,"B"*12].pack("n2Z*"), ["AF_INET",54521,"127.0.0.1","127.0.0.1"]])
           expect(UDPSocket).to receive(:new).with(Socket::AF_INET6).and_return(sock)
           con = Connect.new "::1", 69
           con.get(file) 
@@ -64,13 +64,17 @@ module TFTP
           # initial read request send
           sock.should_receive(:send).with([1,file,"netascii"].pack("nZ*Z*"),0,host,port)
           # first data block recieve
-          sock.should_receive(:recvfrom).with(512).and_return([[3,1,"A"*512].pack("n2Z*"), ["AF_INET",tid,"127.0.0.1","127.0.0.1"]])
+          sock.should_receive(:recvfrom).and_return([[3,1,"A"*512].pack("n2Z*"), ["AF_INET",tid,"127.0.0.1","127.0.0.1"]])
           # acknowlagment send
           sock.should_receive(:send).with([4,1].pack("n2"),0,host,tid)
           # second data block receive
-          sock.should_receive(:recvfrom).with(512).and_return([[3,2,"B"*12].pack("n2Z*"), ["AF_INET",tid,"127.0.0.1","127.0.0.1"]])
+          sock.should_receive(:recvfrom).and_return([[3,2,"B"*512].pack("n2Z*"), ["AF_INET",tid,"127.0.0.1","127.0.0.1"]])
           # acknowlagment send
           sock.should_receive(:send).with([4,2].pack("n2"),0,host,tid)
+          # third data block receive
+          sock.should_receive(:recvfrom).and_return([[3,3,"C"*12].pack("n2Z*"), ["AF_INET",tid,"127.0.0.1","127.0.0.1"]])
+          # acknowlagment send
+          sock.should_receive(:send).with([4,3].pack("n2"),0,host,tid)
           
           expect(UDPSocket).to receive(:new).and_return(sock)
           subject.get(file) 

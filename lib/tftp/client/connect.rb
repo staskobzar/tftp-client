@@ -20,9 +20,20 @@ module TFTP
       def get(file, dest=nil)
         File.open(dest || file, ?w) do |file_dest|
           read(file) do
-            file_dest.write response.data
+            file_dest.write convert(response.data)
           end
         end
+        self.tid = nil # reset Transaction ID for future requests
+      end
+
+      # tftp request mode set delegator
+      def mode=(mode)
+        request.mode = mode
+      end
+
+      # tftp request mode return delegator
+      def mode
+        request.mode
       end
 
       private
@@ -32,17 +43,17 @@ module TFTP
             receive
             acknowlege
             yield
-          end while response.data.bytesize.eql? TFTP::Lib::Packet::SEGSIZE
+          end while response.data.bytesize.eql?(TFTP::Lib::Packet::SEGSIZE)
         end
 
         def send(packet)
-          sock.send packet, 0, host, port
+          sock.send packet, 0, host, (tid || port)
         end
 
         def receive
-          msg, addrinfo = sock.recvfrom(TFTP::Lib::Packet::SEGSIZE)
+          msg, addrinfo = sock.recvfrom(TFTP::Lib::Packet::SEGSIZE + 4) # DATA size + 4 bytes of opcode and block
           self.response = msg
-          self.port = addrinfo[1]
+          self.tid = addrinfo[1]
           request.block = response.block
         end
 
@@ -70,6 +81,23 @@ module TFTP
           @response
         end
 
+        def tid=(port)
+          @tid = port
+        end
+
+        def tid
+          @tid
+        end
+
+        # converting netascii
+        # CR, NUL -> CR and CR, LF -> LF
+        def convert(string)
+          pp request.mode
+          # RFC1350: any combination of upper
+          # and lower case, such as "NETASCII", NetAscii", etc.
+          return string unless request.mode.casecmp("netascii").eql?(0)
+          string.gsub(/\r\n/,"\n")
+        end
     end
   end
 end
