@@ -1,6 +1,6 @@
 # Tftp::Client
 
-(NOT DONE YET)
+**(NOT DONE YET)**
 
 TODO: Write a gem description
 
