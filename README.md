@@ -1,5 +1,7 @@
 # Tftp::Client
 
+(NOT DONE YET)
+
 TODO: Write a gem description
 
 ## Installation
