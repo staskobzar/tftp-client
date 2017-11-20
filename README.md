@@ -1,6 +1,6 @@
 # Tftp::Client
 
-**(NOT DONE YET)**
+**(NOT DONE YET) Check C implementation with Ragel FSM: https://github.com/staskobzar/tftp-ragel**
 
 TODO: Write a gem description
 
